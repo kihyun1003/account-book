@@ -1,50 +1,40 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
-const STORAGE_KEY = "account-book:budget";
-const listeners = new Set<() => void>();
-let cache: number | null = null;
-
-function readFromStorage(): number {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? Number(raw) : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function getSnapshot(): number {
-  if (cache === null) cache = readFromStorage();
-  return cache;
-}
-
-function getServerSnapshot(): number {
-  return 0;
-}
-
-function subscribe(callback: () => void) {
-  listeners.add(callback);
-  return () => listeners.delete(callback);
-}
-
-function writeBudget(budget: number) {
-  cache = budget;
-  window.localStorage.setItem(STORAGE_KEY, String(budget));
-  listeners.forEach((listener) => listener());
-}
+const BUDGET_ROW_ID = 1;
 
 export function useBudget() {
-  const budget = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
+  const [budget, setBudgetState] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const setBudget = useCallback((value: number) => {
-    writeBudget(value);
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase
+      .from("budget")
+      .select("amount")
+      .eq("id", BUDGET_ROW_ID)
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) setBudgetState(data.amount);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  return { budget, setBudget };
+  const setBudget = useCallback(async (value: number) => {
+    setBudgetState(value);
+    await supabase
+      .from("budget")
+      .update({ amount: value, updated_at: new Date().toISOString() })
+      .eq("id", BUDGET_ROW_ID);
+  }, []);
+
+  return { budget, setBudget, loading };
 }

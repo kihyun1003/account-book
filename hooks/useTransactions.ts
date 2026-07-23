@@ -1,62 +1,51 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { Transaction } from "@/lib/types";
 
-const STORAGE_KEY = "account-book:transactions";
-const EMPTY: Transaction[] = [];
-const listeners = new Set<() => void>();
-let cache: Transaction[] | null = null;
-
-function readFromStorage(): Transaction[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function getSnapshot(): Transaction[] {
-  if (cache === null) cache = readFromStorage();
-  return cache;
-}
-
-function getServerSnapshot(): Transaction[] {
-  return EMPTY;
-}
-
-function subscribe(callback: () => void) {
-  listeners.add(callback);
-  return () => listeners.delete(callback);
-}
-
-function writeTransactions(transactions: Transaction[]) {
-  cache = transactions;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-  listeners.forEach((listener) => listener());
-}
-
 export function useTransactions() {
-  const transactions = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase
+      .from("transactions")
+      .select("id, type, date, category, amount, memo")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) setTransactions(data as Transaction[]);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addTransaction = useCallback(
-    (transaction: Omit<Transaction, "id">) => {
-      writeTransactions([
-        { ...transaction, id: crypto.randomUUID() },
-        ...getSnapshot(),
-      ]);
+    async (transaction: Omit<Transaction, "id">) => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .insert(transaction)
+        .select("id, type, date, category, amount, memo")
+        .single();
+
+      if (!error && data) {
+        setTransactions((prev) => [data as Transaction, ...prev]);
+      }
     },
     [],
   );
 
-  const removeTransaction = useCallback((id: string) => {
-    writeTransactions(getSnapshot().filter((t) => t.id !== id));
+  const removeTransaction = useCallback(async (id: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    await supabase.from("transactions").delete().eq("id", id);
   }, []);
 
-  return { transactions, addTransaction, removeTransaction };
+  return { transactions, addTransaction, removeTransaction, loading };
 }
