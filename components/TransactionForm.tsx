@@ -37,16 +37,14 @@ export default function TransactionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 p-4"
+      className="calc-panel flex flex-col gap-3 w-full rounded-xl p-4"
     >
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => handleTypeChange("expense")}
-          className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-            type === "expense"
-              ? "bg-red-600 text-white"
-              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+          className={`calc-key flex-1 rounded-lg py-2 text-sm font-bold ${
+            type === "expense" ? "calc-key-red" : ""
           }`}
         >
           지출
@@ -54,10 +52,8 @@ export default function TransactionForm({
         <button
           type="button"
           onClick={() => handleTypeChange("income")}
-          className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-            type === "income"
-              ? "bg-blue-600 text-white"
-              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+          className={`calc-key flex-1 rounded-lg py-2 text-sm font-bold ${
+            type === "income" ? "calc-key-blue" : ""
           }`}
         >
           수입
@@ -65,22 +61,22 @@ export default function TransactionForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-xs font-bold">
           날짜
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2"
+            className="calc-input rounded-lg px-3 py-2 text-sm"
             required
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-xs font-bold">
           카테고리
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2"
+            className="calc-input rounded-lg px-3 py-2 text-sm"
           >
             {CATEGORIES[type].map((c) => (
               <option key={c} value={c}>
@@ -91,7 +87,7 @@ export default function TransactionForm({
         </label>
       </div>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-xs font-bold">
         금액
         <input
           type="number"
@@ -99,25 +95,25 @@ export default function TransactionForm({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0"
-          className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2"
+          className="calc-input rounded-lg px-3 py-2 text-lg font-lcd"
           required
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-xs font-bold">
         메모
         <input
           type="text"
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
           placeholder="선택 사항"
-          className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2"
+          className="calc-input rounded-lg px-3 py-2 text-sm"
         />
       </label>
 
       <button
         type="submit"
-        className="mt-1 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-2 text-sm font-medium hover:opacity-90"
+        className="calc-key calc-key-red mt-1 rounded-lg py-2 text-sm font-bold tracking-wide"
       >
         추가하기
       </button>
